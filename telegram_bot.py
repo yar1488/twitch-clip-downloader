@@ -11,14 +11,15 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = "7569496269:AAGKxd5qH3eQG8_8I7A9vvDA6m59OBDUHms"
-WP_API_URL = "https://prepodsteam.com/wp-json/twitch_clip/v1/download"  # Обновлено
+WP_API_URL = "https://prepodsteam.com/wp-json/twitch_clip/v1/download"
 
 def download_clip(clip_url):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    service = Service()
+    # Указываем путь к chromedriver, установленный новым buildpack
+    service = Service("/app/.chromedriver/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=chrome_options)
     try:
         driver.get("https://www.twitch.tv")
