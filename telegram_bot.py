@@ -11,7 +11,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = "7569496269:AAGKxd5qH3eQG8_8I7A9vvDA6m59OBDUHms"
-WP_API_URL = "https://your-site.com/wp-json/twitch_clip/v1/download"  # Замени на свой домен
+WP_API_URL = "https://prepodsteam.com/wp-json/twitch_clip/v1/download"  # Обновлено
 
 def download_clip(clip_url):
     chrome_options = Options()
