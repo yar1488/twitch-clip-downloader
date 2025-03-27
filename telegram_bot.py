@@ -80,6 +80,7 @@ async def download_portrait_clips(update: Update, context: ContextTypes.DEFAULT_
             results = response.json()
             for i, result in enumerate(results, 1):
                 if result.get('success'):
+                    await update.message.reply_text(f"Обрабатываю клип {i}/{len(clip_urls)}...")
                     success, output_file, video_url, file_size_or_error = download_clip(result['clip_url'])
                     if success:
                         if file_size_or_error > 50 * 1024 * 1024:
