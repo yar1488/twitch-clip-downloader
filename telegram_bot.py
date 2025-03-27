@@ -19,15 +19,14 @@ def download_clip(clip_url):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    # Обновлённый путь к chromedriver
     service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
     driver = None
     try:
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.set_page_load_timeout(30)  # Тайм-аут загрузки страницы
         driver.get("https://www.twitch.tv")
-        driver.add_cookie({"name": "auth-token", "value": "db22vqowglkayt5wbfcyqy73hhplne"})  # Обнови
-        driver.add_cookie({"name": "unique_id", "value": "0yURhlx1H41UmSWnm59mqgB9Ukkw0CmP"})  # Обнови
+        driver.add_cookie({"name": "auth-token", "value": "db22vqowglkayt5wbfcyqy73hhplne"})
+        driver.add_cookie({"name": "unique_id", "value": "0yURhlx1H41UmSWnm59mqgB9Ukkw0CmP"})
         driver.get(clip_url)
         share_button = WebDriverWait(driver, 15).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Поделиться')]"))
@@ -77,4 +76,28 @@ async def download_portrait_clips(update: Update, context: ContextTypes.DEFAULT_
                     success, output_file, video_url, file_size_or_error = download_clip(result['clip_url'])
                     if success:
                         if file_size_or_error > 50 * 1024 * 1024:
-                            awai
+                            await update.message.reply_text(f"Клип {i}/{len(clip_urls)} слишком большой ({file_size_or_error} байт). Вот ссылка: {video_url}")
+                        else:
+                            with open(output_file, "rb") as video:
+                                await update.message.reply_video(video=video, caption=f"Клип {i}/{len(clip_urls)}")
+                            os.remove(output_file)
+                    else:
+                        await update.message.reply_text(f"Ошибка с клипом {i}/{len(clip_urls)}: {file_size_or_error}")
+                else:
+                    await update.message.reply_text(f"Ошибка с клипом {i}/{len(clip_urls)}: {result.get('error')}")
+            await update.message.reply_text("Скачивание завершено!")
+        else:
+            await update.message.reply_text(f"Ошибка сервера WordPress: {response.status_code} - {response.text}")
+    except requests.exceptions.Timeout:
+        await update.message.reply_text("Ошибка: WordPress API не отвечает (тайм-аут). Проверь сервер.")
+    except requests.exceptions.RequestException as e:
+        await update.message.reply_text(f"Ошибка при запросе к WordPress API: {str(e)}")
+
+def main():
+    application = Application.builder().token(TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_portrait_clips))
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
