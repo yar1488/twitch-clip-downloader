@@ -22,21 +22,28 @@ def download_clip(clip_url):
     service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
     driver = None
     try:
+        print(f"Запуск Selenium для клипа: {clip_url}")
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.set_page_load_timeout(30)  # Тайм-аут загрузки страницы
+        driver.set_page_load_timeout(30)
+        print("Загрузка главной страницы Twitch...")
         driver.get("https://www.twitch.tv")
+        print("Добавление cookies...")
         driver.add_cookie({"name": "auth-token", "value": "db22vqowglkayt5wbfcyqy73hhplne"})
         driver.add_cookie({"name": "unique_id", "value": "0yURhlx1H41UmSWnm59mqgB9Ukkw0CmP"})
+        print(f"Загрузка страницы клипа: {clip_url}")
         driver.get(clip_url)
+        print("Поиск кнопки 'Поделиться'...")
         share_button = WebDriverWait(driver, 15).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Поделиться')]"))
         )
         share_button.click()
+        print("Поиск ссылки на скачивание...")
         download_link = WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.XPATH, "//a[contains(@href, 'production.assets.clips.twitchcdn.net') and contains(., 'Скачать портретную версию')]"))
         )
         video_url = download_link.get_attribute("href")
-        response = requests.get(video_url, timeout=30)  # Тайм-аут для скачивания
+        print(f"Скачивание видео по ссылке: {video_url}")
+        response = requests.get(video_url, timeout=30)
         if response.status_code == 200:
             output_file = f"/tmp/clip_{os.urandom(4).hex()}_portrait.mp4"
             with open(output_file, "wb") as f:
@@ -68,7 +75,7 @@ async def download_portrait_clips(update: Update, context: ContextTypes.DEFAULT_
         return
     await update.message.reply_text(f"Начинаю обработку {len(clip_urls)} клипов...")
     try:
-        response = requests.post(WP_API_URL, json={"clip_urls": clip_urls}, timeout=10)  # Тайм-аут для WordPress API
+        response = requests.post(WP_API_URL, json={"clip_urls": clip_urls}, timeout=10)
         if response.status_code == 200:
             results = response.json()
             for i, result in enumerate(results, 1):
@@ -92,6 +99,8 @@ async def download_portrait_clips(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("Ошибка: WordPress API не отвечает (тайм-аут). Проверь сервер.")
     except requests.exceptions.RequestException as e:
         await update.message.reply_text(f"Ошибка при запросе к WordPress API: {str(e)}")
+    except Exception as e:
+        await update.message.reply_text(f"Неизвестная ошибка: {str(e)}")
 
 def main():
     application = Application.builder().token(TOKEN).build()
