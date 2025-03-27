@@ -19,6 +19,9 @@ def download_clip(clip_url):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-images")
     service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
     driver = None
     try:
@@ -32,13 +35,17 @@ def download_clip(clip_url):
         driver.add_cookie({"name": "unique_id", "value": "0yURhlx1H41UmSWnm59mqgB9Ukkw0CmP"})
         print(f"Загрузка страницы клипа: {clip_url}")
         driver.get(clip_url)
+        print("Страница загружена, сохраняем HTML для отладки...")
+        with open("/tmp/page.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
         print("Поиск кнопки 'Поделиться'...")
-        share_button = WebDriverWait(driver, 15).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Поделиться')]"))
+        share_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[@data-a-target='share-button']"))
         )
+        print("Кнопка 'Поделиться' найдена, кликаем...")
         share_button.click()
         print("Поиск ссылки на скачивание...")
-        download_link = WebDriverWait(driver, 15).until(
+        download_link = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.XPATH, "//a[contains(@href, 'production.assets.clips.twitchcdn.net') and contains(., 'Скачать портретную версию')]"))
         )
         video_url = download_link.get_attribute("href")
@@ -52,10 +59,13 @@ def download_clip(clip_url):
         else:
             return False, None, None, f"Ошибка скачивания: {response.status_code}"
     except TimeoutException as e:
+        print(f"Ошибка тайм-аута: {str(e)}")
         return False, None, None, f"Тайм-аут при загрузке страницы или элемента: {str(e)}"
     except WebDriverException as e:
+        print(f"Ошибка Selenium: {str(e)}")
         return False, None, None, f"Ошибка Selenium: {str(e)}"
     except Exception as e:
+        print(f"Неизвестная ошибка: {str(e)}")
         return False, None, None, f"Неизвестная ошибка: {str(e)}"
     finally:
         if driver:
